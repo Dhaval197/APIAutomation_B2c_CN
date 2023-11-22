@@ -1,5 +1,6 @@
 # !/usr/bin/python3
 # -*- coding: utf-8 -*-
+import ast
 import datetime
 import os
 import time
@@ -58,8 +59,7 @@ def get_notv8_hmac(params):
     return sign
 
 
-@allure.story('云存服务信息')
-@pytest.mark.flaky(reruns=3, reruns_delay=2)
+@allure.feature('云存服务信息')
 class TestCloudProfess(object):
     @pytest.fixture(scope='function', autouse=True)
     def setup_teardown(self):
@@ -72,16 +72,17 @@ class TestCloudProfess(object):
         yield
         logger.info('=' * 90)
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_001_user_Login(self, get_load_data_cloud, get_url, i=0):
         """用户登录接口"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['password'] = get_sign(payload['password'])
         logger.info('请求参数为：' + str(payload))
         headers = {'Connection': 'close'}
@@ -95,16 +96,17 @@ class TestCloudProfess(object):
                                       + response.json().get('data').get('token_secret')
             globals()['userId'] = response.json().get('data').get('userid')
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_002_user_List(self, get_load_data_cloud, get_url, i=1):
         """用户订单列表 接口"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_ORDER.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['hmac'] = get_v8_hmac(payload)
         logger.info('请求参数为：' + str(payload))
@@ -118,17 +120,18 @@ class TestCloudProfess(object):
         print(res[0]['code'])
         globals()['orderCode'] = res[0]['code']
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.skip('接口没有返回，暂时跳过')
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_003_cloud_serviceByOrderCode(self, get_load_data_cloud, get_url, i=2):
         """云存服务列表接口-通过订单号生成业务订单号"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['orderCode'] = globals()['orderCode']
         payload['hmac'] = get_v8_hmac(payload)
@@ -146,16 +149,17 @@ class TestCloudProfess(object):
         assert res[0]['orderCode'] in globals()['orderCode']
         globals()['businessOrderCode'] = res[0]['businessOrderCode']  # 10020210326143139934757816
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_004_cloud_deviceList(self, get_load_data_cloud, get_url, i=3):
         """通过用户id获取云存设备列表"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['hmac'] = get_v8_hmac(payload)
         logger.info('请求参数为：' + str(payload))
@@ -167,16 +171,17 @@ class TestCloudProfess(object):
         assert response.json().get('code') in ResCode.res_mapping.value.get('success')
         globals()['devUid'] = data[0]['deviceCloudStatus']['devUid']
 
-    # @pytest.mark.cn
+    # @pytest.mark.flaky(reruns=3, reruns_delay=2)
+    @pytest.mark.cn
     # @pytest.mark.hw
     # @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-    #                          indirect=["get_load_data_cloud", "get_url"])
+    #                          indirect=True)
     # def test_005_cloud_setBind(self, get_load_data_cloud, get_url, i=4):
     #     """设备绑定/解绑业务订单-从Url获取参数"""
     #     allure.dynamic.title(get_load_data_cloud[i][0])
     #     url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
     #     logger.info('请求地址为：' + url)
-    #     payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+    #     payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
     #     payload['userid'] = globals()['userId']
     #     payload['businessOrderCode'] = globals()['businessOrderCode']
     #     payload['devUid'] = globals()['devUid']
@@ -188,16 +193,17 @@ class TestCloudProfess(object):
     #     assert response.status_code == 200, '请求返回非200'  # 断言请求是否成功
     #     assert response.json().get('code') in ResCode.res_mapping.value.get('success')  # 断言响应code==20000
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_005_cloud_deviceStatus(self, get_load_data_cloud, get_url, i=5):
         """设备状态"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['uid'] = globals()['devUid']
         payload['hmac'] = get_v8_hmac(payload)
@@ -208,16 +214,17 @@ class TestCloudProfess(object):
         assert response.status_code == 200, '请求返回非200'  # 断言请求是否成功
         assert response.json().get('code') in ResCode.res_mapping.value.get('success')  # 断言响应code==20000
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_006_cloud_service(self, get_load_data_cloud, get_url, i=6):
         """云存服务列表"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['hmac'] = get_v8_hmac(payload)
         logger.info('请求参数为：' + str(payload))
@@ -227,16 +234,17 @@ class TestCloudProfess(object):
         assert response.status_code == 200, '请求返回非200'  # 断言请求是否成功
         assert response.json().get('code') in ResCode.res_mapping.value.get('success')  # 断言响应code==20000
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_007_cloud_status(self, get_load_data_cloud, get_url, i=7):
         """设备云存订单状态（业务订单状态、设备设置状态）"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['uid'] = globals()['devUid']
         payload['hmac'] = get_v8_hmac(payload)
@@ -247,17 +255,18 @@ class TestCloudProfess(object):
         assert response.status_code == 200, '请求返回非200'  # 断言请求是否成功
         assert response.json().get('code') in ResCode.res_mapping.value.get('success')  # 断言响应code==20000
 
-    # @pytest.mark.cn
+    # @pytest.mark.flaky(reruns=3, reruns_delay=2)
+    @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.skip('接口没有返回，暂时跳过')
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_008_cloud_deleteOrderByBusiness(self, get_load_data_cloud, get_url, i=8):
         """通过订单CODE删除订单"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['businessOrderCode'] = globals()['businessOrderCode']
         payload['hmac'] = get_v8_hmac(payload)
@@ -268,16 +277,17 @@ class TestCloudProfess(object):
         assert response.status_code == 200, '请求返回非200'  # 断言请求是否成功
         assert response.json().get('code') in ResCode.res_mapping.value.get('success')  # 断言响应code==20000
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_009_cloud_FileInfoController_GetListByRefId(self, get_load_data_cloud, get_url, i=9):
         """获取文件列表"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['refId'] = '339'
         payload['hmac'] = get_v8_hmac(payload)
@@ -288,16 +298,17 @@ class TestCloudProfess(object):
         assert response.status_code == 200, '请求返回非200'  # 断言请求是否成功
         assert response.json().get('code') in ResCode.res_mapping.value.get('success')  # 断言响应code==20000
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_010_cloud_FileInfoController_GetUploadAddress(self, get_load_data_cloud, get_url, i=10):
         """获取上传地址"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['hmac'] = get_v8_hmac(payload)
         logger.info('请求参数为：' + str(payload))
@@ -307,16 +318,17 @@ class TestCloudProfess(object):
         assert response.status_code == 200, '请求返回非200'  # 断言请求是否成功
         assert response.json().get('code') in ResCode.res_mapping.value.get('success')  # 断言响应code==20000
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_011_cloud_images(self, get_load_data_cloud, get_url, i=11):
         """云存AI检索"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['uid'] = globals()['devUid']
         payload['end_time'] = int(time.time())
@@ -351,16 +363,17 @@ class TestCloudProfess(object):
                               and (image_last in b.cloud_oss('xiaoyi-css-cn-30d', image_laste_path))))
             assert result is True  # 判断该视频存在oss中，否则失败
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_012_cloud_images(self, get_load_data_cloud, get_url, i=12):
         """Yihome_Api"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['uid'] = globals()['devUid']
         payload['end_time'] = int(time.time())
@@ -376,16 +389,17 @@ class TestCloudProfess(object):
             assert 'viewUrl' in res.keys(), '结果中包含viewUrl'
             assert 'viewUrlImg' in res.keys(), '结果中包含viewUrlImg'
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_013_get_videos(self, get_load_data_cloud, get_url, i=13):
         """云存播放滚动条渲染_get"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1].strip()
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['uid'] = globals()['devUid']
         payload['end_time'] = int(time.time())
@@ -399,16 +413,17 @@ class TestCloudProfess(object):
         assert response.json().get('code') in ResCode.res_mapping.value.get('success'), '验证通过'
         assert res is not None, 'msg 有提示信息'  # 断言响应data字段值不为空,当get到信息时候，判断有以下信息
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_014_post_videos(self, get_load_data_cloud, get_url, i=14):
         """云存播放滚动条渲染_post"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1].strip()
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['uid'] = globals()['devUid']
         payload['end_time'] = int(time.time())
@@ -422,16 +437,17 @@ class TestCloudProfess(object):
         assert response.json().get('code') in [20000, 50013], '200000表示userid 下的 设备 id 是绑定的，50013 则不是。'
         assert res in ['success', '查看视频异常'], 'msg 有提示信息'  # 断言响应data字段值不为空,当get到信息时候，判断有以下信息
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_015_del_videos(self, get_load_data_cloud, get_url, i=15):
         """删除云存播放信息-delete"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1].strip()
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['uid'] = globals()['devUid']
         payload['start_time'] = days_age30()  # 30天前的时间戳
@@ -444,16 +460,17 @@ class TestCloudProfess(object):
         assert response.status_code == 200, '请求返回非200'  # 断言请求是否成功
         assert response.json().get('code') in ResCode.res_mapping.value.get('success'), '验证通过'
 
-    # @pytest.mark.cn
+    # @pytest.mark.flaky(reruns=3, reruns_delay=2)
+    @pytest.mark.cn
     # @pytest.mark.hw
     # @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-    #                          indirect=["get_load_data_cloud", "get_url"])
+    #                          indirect=True)
     # def test_017_cloud_STSToken(self, get_load_data_cloud, get_url, i=17):
     #     """IPC获取STSToken"""
     #     allure.dynamic.title(get_load_data_cloud[i][0])
     #     url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1].strip()
     #     logger.info('请求地址为：' + url)
-    #     payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+    #     payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
     #     payload['userid'] = globals()['userId']
     #     payload['hmac'] = get_notv8_hmac(payload)
     #     logger.info('请求参数为：' + str(payload))
@@ -463,16 +480,17 @@ class TestCloudProfess(object):
     #     assert response.status_code == 200, '请求返回非200'  # 断言请求是否成功
     #     assert response.json().get('code') == 20202, '验证表示当前的验签规则不能用普通的规则'
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_016_cloud_ipc(self, get_load_data_cloud, get_url, i=17):
         """IPC-云存开关状态"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1].strip()
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         # payload['uid'] = globals()['devUid']
         payload['timestamp'] = int(time.time())  # 获取当前时间戳到min
@@ -488,16 +506,17 @@ class TestCloudProfess(object):
         assert flag == 1
         assert image_flag == 1
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_017_get_cloud(self, get_load_data_cloud, get_url, i=18):
         """云存开关状态  cloud get"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['uid'] = globals()['devUid']
         payload['timestamp'] = int(time.time())  # 获取当前时间戳到min
@@ -514,17 +533,18 @@ class TestCloudProfess(object):
         assert mode == 0
         # assert flag == 0   # 1 是关闭 0是打开
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     @pytest.mark.parametrize('state', [1, 0])  # 给同一个case 传递参数，转化为多个case了
     def test_018_put_cloud(self, get_load_data_cloud, get_url, state, i=19):
         """云存开关状态  cloud put"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['uid'] = globals()['devUid']
         payload['hmac'] = get_v8_hmac(payload)
@@ -536,16 +556,17 @@ class TestCloudProfess(object):
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
         assert response.json().get('data') is None  # 断言响应data
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_019_equipment_list(self, get_load_data_cloud, get_url, i=21):
         """多个设备维度列表"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['hmac'] = get_v8_hmac(payload)
         logger.info('请求参数为：' + str(payload))
@@ -556,16 +577,17 @@ class TestCloudProfess(object):
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
         assert response.json().get('data') is not None  # 待确认
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_020_equipment_ForPay(self, get_load_data_cloud, get_url, i=22):
         """支付设备列表"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['hmac'] = get_v8_hmac(payload)
         logger.info('请求参数为：' + str(payload))
@@ -576,16 +598,17 @@ class TestCloudProfess(object):
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
         assert response.json().get('data') is not None  # 断言响应
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_021_get_DeviceList(self, get_load_data_cloud, get_url, i=23):
         """通过用户id获取绑定的报警设备列表"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['hmac'] = get_v8_hmac(payload)
         logger.info('请求参数为：' + str(payload))
@@ -596,16 +619,17 @@ class TestCloudProfess(object):
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
         assert response.json().get('data') is not None  # 断言响应
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_023_equipment_BannerList(self, get_load_data_cloud, get_url, i=24):
         """多个设备维度banner列表"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['hmac'] = get_v8_hmac(payload)
         logger.info('请求参数为：' + str(payload))
@@ -616,16 +640,17 @@ class TestCloudProfess(object):
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
         assert response.json().get('data') is not None  # 断言响应
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_024_equipment_play(self, get_load_data_cloud, get_url, i=25):
         """播放器下方广告位统一"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['hmac'] = get_v8_hmac(payload)
         logger.info('请求参数为：' + str(payload))
@@ -636,16 +661,17 @@ class TestCloudProfess(object):
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
         assert response.json().get('data') is not None  # 断言响应
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_025_equipment_cloudHock(self, get_load_data_cloud, get_url, i=26):
         """equipmentCloudHook"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['uid'] = globals()['devUid']
         payload['hmac'] = get_v8_hmac(payload)
@@ -656,16 +682,17 @@ class TestCloudProfess(object):
         assert response.status_code == 200, '请求返回非200'  # 断言请求是否成功
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_026_equipment_mainHock(self, get_load_data_cloud, get_url, i=27):
         """equipmentMainHook"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['hmac'] = get_v8_hmac(payload)
         logger.info('请求参数为：' + str(payload))
@@ -675,16 +702,17 @@ class TestCloudProfess(object):
         assert response.status_code == 200, '请求返回非200'  # 断言请求是否成功
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_027_equipment_appHock(self, get_load_data_cloud, get_url, i=28):
         """equipment appHock"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['uid'] = globals()['devUid']
         payload['hmac'] = get_v8_hmac(payload)
@@ -696,16 +724,17 @@ class TestCloudProfess(object):
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
         # assert response.json().get('data') is not None '已购买云存'
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_028_equipment_H5Hock(self, get_load_data_cloud, get_url, i=29):
-        '''equipment h5Hock'''
+        """equipment h5Hock"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['uid'] = globals()['devUid']
         payload['hmac'] = get_v8_hmac(payload)
@@ -717,16 +746,17 @@ class TestCloudProfess(object):
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
         assert response.json().get('data') is not None
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_029_equipment_playHock(self, get_load_data_cloud, get_url, i=30):
-        '''equipment playHock '''
+        """equipment playHock """
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['uid'] = globals()['devUid']
         payload['hmac'] = get_v8_hmac(payload)
@@ -738,16 +768,17 @@ class TestCloudProfess(object):
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
         # assert response.json().get('data') is not None   '已购买云存'
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_030_equipment_banner3(self, get_load_data_cloud, get_url, i=31):
-        '''单个设备banner列表03'''
+        """单个设备banner列表03"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['uid'] = globals()['devUid']
         payload['hmac'] = get_v8_hmac(payload)
@@ -758,16 +789,17 @@ class TestCloudProfess(object):
         assert response.status_code == 200, '请求返回非200'  # 断言请求是否成功
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_031_orderPay_remind(self, get_load_data_cloud, get_url, i=32):
-        '''云回放页订单状态提醒'''
+        """云回放页订单状态提醒"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['uid'] = globals()['devUid']
         payload['hmac'] = get_v8_hmac(payload)
@@ -779,16 +811,17 @@ class TestCloudProfess(object):
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
         assert response.json().get('data') is not None
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_032_orderPay_remind(self, get_load_data_cloud, get_url, i=33):
-        '''播放器下方广告位统一02'''
+        """播放器下方广告位统一02"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['hmac'] = get_v8_hmac(payload)
         logger.info('请求参数为：' + str(payload))
@@ -799,16 +832,17 @@ class TestCloudProfess(object):
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
         assert response.json().get('data') is not None
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_033_orderPay_remind(self, get_load_data_cloud, get_url, i=34):
-        '''云回放页提醒订单状态-关闭广告条'''
+        """云回放页提醒订单状态-关闭广告条"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['uid'] = globals()['devUid']
         payload['hmac'] = get_v8_hmac(payload)
@@ -819,16 +853,17 @@ class TestCloudProfess(object):
         assert response.status_code == 200, '请求返回非200'  # 断言请求是否成功
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_034_equipment_banner(self, get_load_data_cloud, get_url, i=35):
-        '''单个设备banner列表'''
+        """单个设备banner列表"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['uid'] = globals()['devUid']
         payload['hmac'] = get_v8_hmac(payload)
@@ -839,16 +874,17 @@ class TestCloudProfess(object):
         assert response.status_code == 200, '请求返回非200'  # 断言请求是否成功
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_035_equipment_banner2(self, get_load_data_cloud, get_url, i=36):
-        '''单个设备banner列表02'''
+        """单个设备banner列表02"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['uid'] = globals()['devUid']
         payload['hmac'] = get_v8_hmac(payload)
@@ -859,16 +895,17 @@ class TestCloudProfess(object):
         assert response.status_code == 200, '请求返回非200'  # 断言请求是否成功
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_038_cloud_memomotion_pause(self, get_load_data_cloud, get_url, i=39):
-        '''时光沙漏视频暂停'''
+        """时光沙漏视频暂停"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         # 加密字段排序
         request_data = {
             "seq": payload['seq'], "userid": globals()['userId'],
@@ -882,17 +919,18 @@ class TestCloudProfess(object):
         assert response.status_code == 200, '请求返回非200'  # 断言请求是否成功
         assert response.json().get('code') == '20000', '验证通过,40402 表示服务过期'
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.skip('影响生产数据，暂时跳过')
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_039_cloud_memomotion_delete(self, get_load_data_cloud, get_url, i=38):
-        '''时光沙漏视频删除'''
+        """时光沙漏视频删除"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         # 加密字段排序
         request_data = {
             'seq': payload['seq'], 'userid': globals()['userId'], 'memoIds': globals()['memoIds']
@@ -905,16 +943,17 @@ class TestCloudProfess(object):
         assert response.status_code == 200, '请求返回非200'  # 断言请求是否成功
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_040_serviceListByOrderCode(self, get_load_data_cloud, get_url, i=41):
-        '''通过订单号和业务类型获取业务订单'''
+        """通过订单号和业务类型获取业务订单"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['orderCode'] = globals()['orderCode']
         payload['hmac'] = get_v8_hmac(payload)
@@ -925,16 +964,17 @@ class TestCloudProfess(object):
         assert response.status_code == 200, '请求返回非200'  # 断言请求是否成功
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_041_equipmentPlay_removehook(self, get_load_data_cloud, get_url, i=42):
-        '''equipmentPlayRemoveHook'''
+        """equipmentPlayRemoveHook"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['uid'] = globals()['devUid']
         payload['hmac'] = get_v8_hmac(payload)
@@ -945,17 +985,18 @@ class TestCloudProfess(object):
         assert response.status_code == 200, '请求返回非200'  # 断言请求是否成功
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     # @pytest.mark.xfail('card和device都没入库')
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_042_get4gInfo_old(self, get_load_data_cloud, get_url, i=43):
-        '''老版获取4G卡内容，线上在用'''
+        """老版获取4G卡内容，线上在用"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         # 设备未确认前，使用固定参数传值
         # payload['userid'] = globals()['userId']
         # payload['uid'] = globals()['devUid']
@@ -968,16 +1009,17 @@ class TestCloudProfess(object):
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
         assert response.json().get('data') is not None
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_043_get4gInfo_new(self, get_load_data_cloud, get_url, i=44):
-        '''新版获取4G卡内容'''
+        """新版获取4G卡内容"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['uid'] = globals()['devUid']
         payload['hmac'] = get_v8_hmac(payload)
@@ -989,16 +1031,17 @@ class TestCloudProfess(object):
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
         assert response.json().get('data') is not None
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_044_equipmentMsg_removeHook(self, get_load_data_cloud, get_url, i=45):
-        '''消息页关闭hook'''
+        """消息页关闭hook"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['hmac'] = get_v8_hmac(payload)
         logger.info('请求参数为：' + str(payload))
@@ -1008,16 +1051,17 @@ class TestCloudProfess(object):
         assert response.status_code == 200, '请求返回非200'  # 断言请求是否成功
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_045_equipment_removeHook(self, get_load_data_cloud, get_url, i=46):
-        '''设备云回放页 关闭hook'''
+        """设备云回放页 关闭hook"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['hmac'] = get_v8_hmac(payload)
         logger.info('请求参数为：' + str(payload))
@@ -1027,16 +1071,17 @@ class TestCloudProfess(object):
         assert response.status_code == 200, '请求返回非200'  # 断言请求是否成功
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_046_equipment_removeHook(self, get_load_data_cloud, get_url, i=47):
-        '''设备直播页 hook'''
+        """设备直播页 hook"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['uid'] = globals()['devUid']
         payload['hmac'] = get_v8_hmac(payload)
@@ -1048,16 +1093,17 @@ class TestCloudProfess(object):
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
         # assert response.json().get('data') is not None   '已购买云存'
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_047_equipment_removeHook(self, get_load_data_cloud, get_url, i=48):
-        '''通过iccid或did查询卡状态'''
+        """通过iccid或did查询卡状态"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['hmac'] = get_v8_hmac(payload)
         logger.info('请求参数为：' + str(payload))
@@ -1068,16 +1114,17 @@ class TestCloudProfess(object):
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
         assert response.json().get('data') is not None
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_048_equipment_orderPayMessageRemind(self, get_load_data_cloud, get_url, i=49):
-        '''消息页新增订单创建未购买、订单临期未续费、订单到期未续费钩子'''
+        """消息页新增订单创建未购买、订单临期未续费、订单到期未续费钩子"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['uid'] = globals()['devUid']
         payload['hmac'] = get_v8_hmac(payload)
@@ -1089,16 +1136,18 @@ class TestCloudProfess(object):
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
         assert response.json().get('data') is not None
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
+    @pytest.mark.skip("钩子下线")
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_049_equipment_orderPaySDRemind(self, get_load_data_cloud, get_url, i=50):
-        '''SD卡回放页新增云存订单状态提醒'''
+        """SD卡回放页新增云存订单状态提醒"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['uid'] = globals()['devUid']
         payload['hmac'] = get_v8_hmac(payload)
@@ -1110,16 +1159,18 @@ class TestCloudProfess(object):
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
         assert response.json().get('data') is not None
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
+    @pytest.mark.skip("钩子下线")
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_050_equipment_closeSDCloudOrderPayBanner(self, get_load_data_cloud, get_url, i=51):
-        '''SD卡回放页新增云存订单状态提醒关闭广告条'''
+        """SD卡回放页新增云存订单状态提醒关闭广告条"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['uid'] = globals()['devUid']
         payload['hmac'] = get_v8_hmac(payload)
@@ -1130,16 +1181,17 @@ class TestCloudProfess(object):
         assert response.status_code == 200, '请求返回非200'  # 断言请求是否成功
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_051_equipment_one(self, get_load_data_cloud, get_url, i=52):
         """单个设备维度列表"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['uid'] = globals()['devUid']
         payload['hmac'] = get_v8_hmac(payload)
@@ -1151,16 +1203,17 @@ class TestCloudProfess(object):
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
         assert response.json().get('data') is not None  # 断言响应data
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_052_equipment_one(self, get_load_data_cloud, get_url, i=53):
         """设备维度云存服务列表"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['hmac'] = get_v8_hmac(payload)
         logger.info('请求参数为：' + str(payload))
@@ -1170,16 +1223,17 @@ class TestCloudProfess(object):
         assert response.status_code == 200, '请求返回非200'  # 断言请求是否成功
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_053_getNoLockDays(self, get_load_data_cloud, get_url, i=54):
         """getNoLockDays"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['hmac'] = get_v8_hmac(payload)
         logger.info('请求参数为：' + str(payload))
@@ -1189,16 +1243,17 @@ class TestCloudProfess(object):
         assert response.status_code == 200, '请求返回非200'  # 断言请求是否成功
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_054_getEquipment_lastBusOrder(self, get_load_data_cloud, get_url, i=55):
-        """'''获取用户wifi设备及其最后一笔服务'''"""
+        """获取用户wifi设备及其最后一笔服务"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['hmac'] = get_v8_hmac(payload)
         logger.info('请求参数为：' + str(payload))
@@ -1209,17 +1264,18 @@ class TestCloudProfess(object):
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
         assert response.json().get('data') is not None
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.skip('没有4g设备，暂时跳过')
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_055_cloud_4gStatus(self, get_load_data_cloud, get_url, i=56):
-        """'''设备云存订单状态（业务订单状态、设备设置状态）'''"""
+        """设备云存订单状态（业务订单状态、设备设置状态）"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         # 需要绑定4G设备，设备未确定前使用固定参数
         # payload['userid'] = globals()['userId']
         # payload['uid'] = globals()['devUid']
@@ -1232,16 +1288,17 @@ class TestCloudProfess(object):
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
         assert response.json().get('data') is not None
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_056_get_4gList(self, get_load_data_cloud, get_url, i=57):
-        """'''获取4G列表'''"""
+        """获取4G列表"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['hmac'] = get_v8_hmac(payload)
         logger.info('请求参数为：' + str(payload))
@@ -1252,16 +1309,18 @@ class TestCloudProfess(object):
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
         # assert response.json().get('data') is not None           #需要绑定4G设备，否则响应data数据为空
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
+    @pytest.mark.skip("需要设备开通云服务")
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_057_AI_cloudImages(self, get_load_data_cloud, get_url, i=58):
-        """'''云存AI检索'''"""
+        """云存AI检索"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         # payload['userid'] = globals()['userId']
         # payload['hmac'] = get_v8_hmac(payload)
         logger.info('请求参数为：' + str(payload))
@@ -1272,17 +1331,18 @@ class TestCloudProfess(object):
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
         assert response.json().get('data') is not None
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.xfail(reason='设备信息不存在')
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_058_get_OSSToken_V9(self, get_load_data_cloud, get_url, i=59):
-        """'''getOSSTokenV9'''"""
+        """getOSSTokenV9"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['hmac'] = get_v8_hmac(payload)
         logger.info('请求参数为：' + str(payload))
         headers = {'Connection': 'close'}
@@ -1291,16 +1351,17 @@ class TestCloudProfess(object):
         assert response.status_code == 200, '请求返回非200'  # 断言请求是否成功
         assert response.json().get('code') == 20000, '设备不存在'
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_059_cloud_index(self, get_load_data_cloud, get_url, i=60):
-        """'''云存储，获取m3u8文件'''"""
+        """云存储，获取m3u8文件"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         # payload['hmac'] = get_v8_hmac(payload)
         logger.info('请求参数为：' + str(payload))
         headers = {'Connection': 'close'}
@@ -1308,16 +1369,17 @@ class TestCloudProfess(object):
         logger.info('响应结果为：' + response.text)
         assert response.status_code == 200, '请求返回非200'  # 断言请求是否成功
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_060_main_removeHook(self, get_load_data_cloud, get_url, i=61):
-        """'''equipmentMainRemoveHook'''"""
+        """equipmentMainRemoveHook"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['hmac'] = get_v8_hmac(payload)
         logger.info('请求参数为：' + str(payload))
@@ -1328,16 +1390,17 @@ class TestCloudProfess(object):
         assert response.json().get('code') == 20000, '验证通过,40402 表示服务过期'
         assert response.json().get('data') is None
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data_cloud, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data_cloud", "get_url"])
+                             indirect=True)
     def test_062_cloud_hlsKey(self, get_load_data_cloud, get_url, i=62):
-        """'''m3u8文件解密地址'''"""
+        """m3u8文件解密地址"""
         allure.dynamic.title(get_load_data_cloud[i][0])
         url = get_url + URLConf.PREFIX_VAS.value + get_load_data_cloud[i][1]
         logger.info('请求地址为：' + url)
-        payload = eval(get_load_data_cloud[i][-1])  # 参数类型为dict
+        payload = ast.literal_eval(get_load_data_cloud[i][-1])  # 参数类型为dict
         payload['userid'] = globals()['userId']
         payload['uid'] = globals()['devUid']
         logger.info('请求参数为：' + str(payload))

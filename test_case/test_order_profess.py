@@ -6,9 +6,12 @@ import allure
 import pytest
 import logging
 import requests
+
+import common
 from fixture.get_hmac_fixture import *
 from config.url_config import URLConf
 from config.response_code import ResCode
+from lib.global_val import GlobalValueHelper
 
 logger = logging.getLogger(__name__)
 # test_data所在路径 如：D:\yi_api_test_profess\test_data
@@ -45,6 +48,7 @@ def get_notv8_hmac(params):
     return sign
 
 
+@allure.feature('订单服务信息')
 class TestOrderProfess(object):
     @pytest.fixture(scope='function', autouse=True)
     def setup_teardown(self):
@@ -57,10 +61,11 @@ class TestOrderProfess(object):
         yield
         logger.info('\n===============teardown============')
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_001_user_Login(self, get_load_data, get_url, i=0):
         """用户登录接口"""
         allure.dynamic.title(get_load_data[i][0])
@@ -76,14 +81,16 @@ class TestOrderProfess(object):
         assert response.json().get('code') in ResCode.res_mapping.value.get('success'), '验证通过'
         assert response.json().get('data') is not None
         if response.json().get('code') in ResCode.res_mapping.value.get('success'):
-            globals()['sign_value'] = response.json().get('data').get('token') + '&' \
-                                      + response.json().get('data').get('token_secret')
+            globals()['sign_value'] = response.json().get('data').get('token') + '&' + response.json().get('data').get('token_secret')
             globals()['userId'] = response.json().get('data').get('userid')
+            GlobalValueHelper().set_value("sign_value", globals()['sign_value'])
+            GlobalValueHelper().set_value("userId", globals()['userId'])
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_002_create_Token(self, get_load_data, get_url, i=1):
         """创建订单Token接口"""
         allure.dynamic.title(get_load_data[i][0])
@@ -101,17 +108,25 @@ class TestOrderProfess(object):
         assert response.json().get('data') is not None  # 断言响应token字段值不为空
         globals()['token'] = response.json().get('data')
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_003_create_Order(self, get_load_data, get_url, i=2):
         """创建订单接口"""
         allure.dynamic.title(get_load_data[i][0])
         logger.info('用例名称：' + get_load_data[i][0])  # 用例名称
+        # 获取设备列表
+        r_json = common.APIFunc().get_device_list(url=get_url, userid=globals()['userId'])
         url = get_url + URLConf.PREFIX_ORDER.value + get_load_data[i][1]  # 接口请求uri
         logger.info('请求地址为：' + url)
         payload = eval(get_load_data[i][-1])  # 参数类型为dict
+        if len(r_json) > 0:
+            payload["uids"] = r_json[0]["uid"]
+        else:
+            # todo 没有设备需要绑定设备
+            pass
         payload['token'] = globals()['token']
         payload['userid'] = globals()['userId']
         payload['hmac'] = get_v8_hmac(payload)
@@ -123,12 +138,13 @@ class TestOrderProfess(object):
         assert response.json().get('data').get('orderCode') is not None  # 断言响应orderCode字段值不为空
         globals()['orderCode'] = response.json().get('data').get('orderCode')
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_036_isCanPayOrder(self, get_load_data, get_url, i=35):
-        '''查询用户是否可以支付订单'''
+        """查询用户是否可以支付订单"""
         allure.dynamic.title(get_load_data[i][0])
         url = get_url + URLConf.PREFIX_ORDER.value + get_load_data[i][1]
         logger.info('请求地址为：' + url)
@@ -143,9 +159,10 @@ class TestOrderProfess(object):
         assert response.status_code == 200, '请求返回非200'  # 断言请求是否成功
         assert response.json().get('code') == 20000
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_004_query_initialCode(self, get_load_data, get_url, i=3):
         """查询初始化 订单状态接口 10"""
         allure.dynamic.title(get_load_data[i][0])
@@ -169,10 +186,11 @@ class TestOrderProfess(object):
     discript_cn = ['10-支付宝', '20-微信', '40-apple', '41-apple自动续费', '50-充值卡', '60-免费', '70-stripe订阅']
     ids = [f'payTpye={p}' for p in discript_cn]  # => 生成与数据值相同的名称列表
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn  # 该用例国内执行
     @pytest.mark.parametrize('payType_cn', [10, 20, 40, 41, 50, 60, 70], ids=ids)  # 支付类型参数化
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_005_editPayStatus_Order_cn(self, get_load_data, get_url, payType_cn, i=4):
         """同步返回修改支付状态为支付中 20"""
         logger.info('用例名称：' + get_load_data[i][0])  # 用例名称
@@ -192,10 +210,11 @@ class TestOrderProfess(object):
     discript_hw = ['30-paypal', '31-paypal自动续费', '32-信用卡', '40-apple', '41-apple自动续费', '50-充值卡', '60-免费', '70-stripe订阅']
     ids = [f'payTpye={p}' for p in discript_hw]  # => 生成与数据值相同的名称列表
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.hw  # 该用例海外执行
     @pytest.mark.parametrize('payType_hw', [30, 31, 32, 40, 41, 50, 60, 70], ids=ids)  # 支付类型参数化
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_005_editPayStatus_Order_hw(self, get_load_data, get_url, payType_hw, i=4):
         """同步返回修改支付状态为支付中 20 海外环境"""
         logger.info('用例名称：' + get_load_data[i][0])  # 用例名称
@@ -212,9 +231,10 @@ class TestOrderProfess(object):
         assert response.status_code == 200, '请求返回非200'  # 断言请求是否成功
         assert response.json().get('code') in ResCode.res_mapping.value.get('success'), '验证通过'  # 断言响应code为 20000
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn  # 该用例国内执行
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_006_query_paymentCode(self, get_load_data, get_url, i=5):
         """查询支付中 订单状态接口 20"""
         allure.dynamic.title(get_load_data[i][0])
@@ -232,9 +252,10 @@ class TestOrderProfess(object):
         assert response.json().get('code') in ResCode.res_mapping.value.get('success'), '验证通过'  # 断言响应code为 20000
         assert response.json().get('data') in [20, '20'], '订单状态为支付中 20'  # 断言支付状态为 20
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_007_wxPay_Order(self, get_load_data, get_url, i=6):
         """微信客户端支付 接口"""
         allure.dynamic.title(get_load_data[i][0])
@@ -252,10 +273,11 @@ class TestOrderProfess(object):
         assert response.json().get('code') in ResCode.res_mapping.value.get('success'), '验证通过'
         assert response.json().get('data') is not None  # 断言响应data字段值不为空
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_008_userOrder_list(self, get_load_data, get_url, i=7):
         """用户订单列表 接口"""
         allure.dynamic.title(get_load_data[i][0])
@@ -276,10 +298,11 @@ class TestOrderProfess(object):
             globals()['user_records'] = [records[i]['code'] for i in range(len(records))]
         logger.info('用户订单号为：' + str(globals()['user_records']))
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_009_userOrder_detail(self, get_load_data, get_url, i=8):
         """用户订单详情 接口"""
         allure.dynamic.title(get_load_data[i][0])
@@ -297,9 +320,10 @@ class TestOrderProfess(object):
         assert response.json().get('code') in ResCode.res_mapping.value.get('success'), '验证通过'
         assert response.json().get('data') is not None  # 断言响应data字段值不为空
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_010_userOrderPay_history(self, get_load_data, get_url, i=9):
         """用户订单支付历史 接口"""
         allure.dynamic.title(get_load_data[i][0])
@@ -316,10 +340,11 @@ class TestOrderProfess(object):
         assert response.status_code == 200, '请求返回非200'  # 断言请求是否成功
         assert response.json().get('code') in ResCode.res_mapping.value.get('success'), '验证通过'
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_011_Get_Trail(self, get_load_data, get_url, i=10):
         """是否是新用户 接口"""
         allure.dynamic.title(get_load_data[i][0])
@@ -336,9 +361,10 @@ class TestOrderProfess(object):
         assert response.json().get('code') in ResCode.res_mapping.value.get('success'), '验证通过'
         assert response.json().get('data').get('trial') in [0, 1]  # 0为新用户；1为老用户
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_012_Order_Exists(self, get_load_data, get_url, i=11):
         """是否有云服务 接口"""
         allure.dynamic.title(get_load_data[i][0])
@@ -355,9 +381,10 @@ class TestOrderProfess(object):
         assert response.json().get('code') in ResCode.res_mapping.value.get('success'), '验证通过'
         assert response.json().get('data') in [0, 1]  # 0没有；1为有云服务
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_013_Renew_Order(self, get_load_data, get_url, i=12):
         """一键续费 接口"""
         allure.dynamic.title(get_load_data[i][0])
@@ -375,10 +402,11 @@ class TestOrderProfess(object):
         assert response.json().get('code') in ResCode.res_mapping.value.get('success'), '验证通过'  # 订单支付成功后才可续费
         assert response.json().get('data') is not None  # 断言data不为空
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn  # 该用例国内执行
     @pytest.mark.hw  # 该用例海外执行
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_014_edit_OrderInfo(self, get_load_data, get_url, i=13):
         """oms系统修改订单时间接口"""
         allure.dynamic.title(get_load_data[i][0])
@@ -395,10 +423,11 @@ class TestOrderProfess(object):
         assert response.status_code == 200, '请求返回非200'  # 断言请求是否成功
         assert response.text in ResCode.res_mapping.value.get('success')
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn  # 该用例国内执行
     @pytest.mark.hw  # 该用例海外执行
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_015_selectId_Orderstatus(self, get_load_data, get_url, i=14):
         """根据用户id获取用户订单信息"""
         allure.dynamic.title(get_load_data[i][0])
@@ -415,11 +444,12 @@ class TestOrderProfess(object):
         assert response.json().get('code') in ResCode.res_mapping.value.get('success'), '验证通过'
         assert response.json().get('data') is not None  # 断言data不为空
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn  # 该用例国内执行
     @pytest.mark.hw  # 该用例海外执行
     @pytest.mark.skip('接口在国内没有返回，暂时跳过')
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_016_nearly_seven_dayOrder(self, get_load_data, get_url, i=15):
         """获取用户近7天过期订单"""
         allure.dynamic.title(get_load_data[i][0])
@@ -438,7 +468,7 @@ class TestOrderProfess(object):
 
     @pytest.mark.hw  # 该用例海外执行
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_018_Order_E911Service(self, get_load_data, get_url, i=17):
         """是否有e911服务"""
         allure.dynamic.title(get_load_data[i][0])
@@ -456,7 +486,7 @@ class TestOrderProfess(object):
 
     @pytest.mark.hw  # 该用例海外执行
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_019_Order_Quarterscreen(self, get_load_data, get_url, i=18):
         """用户的下的订单是否支持四分屏"""
         allure.dynamic.title(get_load_data[i][0])
@@ -473,10 +503,11 @@ class TestOrderProfess(object):
         assert response.json().get('code') in ResCode.res_mapping.value.get('success'), '验证通过'
         assert response.json().get('data') is not None
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_020_product_cloudAndAlarmList(self, get_load_data, get_url, i=20):
         """云存+报警服务组合套餐产品sku列表"""
         allure.dynamic.title(get_load_data[i][0])
@@ -493,10 +524,11 @@ class TestOrderProfess(object):
         assert response.json().get('code') in ResCode.res_mapping.value.get('success'), '验证通过'
         assert response.json().get('data') is not None
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_021_cloud_deviceList(self, get_load_data, get_url, i=17):
         """通过用户id获取云存设备列表"""
         allure.dynamic.title(get_load_data[i][0])
@@ -514,10 +546,11 @@ class TestOrderProfess(object):
         assert response.json().get('code') in ResCode.res_mapping.value.get('success')
         globals()['devUid'] = data[0]['deviceCloudStatus']['devUid']
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_022_product_ListV4(self, get_load_data, get_url, i=21):
         """购买页4.0"""
         allure.dynamic.title(get_load_data[i][0])
@@ -535,12 +568,13 @@ class TestOrderProfess(object):
         assert response.json().get('code') == 20000
         assert response.json().get('data') is not None
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_023_order_detail(self, get_load_data, get_url, i=22):
-        '''用户订单详情'''
+        """用户订单详情"""
         allure.dynamic.title(get_load_data[i][0])
         url = get_url + URLConf.PREFIX_ORDER.value + get_load_data[i][1]
         logger.info('请求地址为：' + url)
@@ -556,12 +590,13 @@ class TestOrderProfess(object):
         assert response.json().get('code') == 20000
         assert response.json().get('data') is not None
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_024_order_getUserSuffix(self, get_load_data, get_url, i=23):
-        '''查询配置对应策略的尾号'''
+        """查询配置对应策略的尾号"""
         allure.dynamic.title(get_load_data[i][0])
         url = get_url + URLConf.PREFIX_ORDER.value + get_load_data[i][1]
         logger.info('请求地址为：' + url)
@@ -576,12 +611,13 @@ class TestOrderProfess(object):
         assert response.json().get('code') == 20000
         assert response.json().get('data') is not None
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_025_getCloudBuyPopWindow(self, get_load_data, get_url, i=24):
-        '''进入云存购买页待支付订单>取消自动续费弹窗展示'''
+        """进入云存购买页待支付订单>取消自动续费弹窗展示"""
         allure.dynamic.title(get_load_data[i][0])
         url = get_url + URLConf.PREFIX_ORDER.value + get_load_data[i][1]
         logger.info('请求地址为：' + url)
@@ -595,12 +631,13 @@ class TestOrderProfess(object):
         assert response.status_code == 200, '请求返回非200'  # 断言请求是否成功
         assert response.json().get('code') == 20000
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_026_batchDevice_list(self, get_load_data, get_url, i=19):
-        '''批量设备购买产品列表接口'''
+        """批量设备购买产品列表接口"""
         allure.dynamic.title(get_load_data[i][0])
         url = get_url + URLConf.PREFIX_ORDER.value + get_load_data[i][1]
         logger.info('请求地址为：' + url)
@@ -615,12 +652,13 @@ class TestOrderProfess(object):
         assert response.json().get('code') == 20000
         assert response.json().get('data') is not None
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_027_product_alarm_list(self, get_load_data, get_url, i=18):
-        '''报警产品sku列表'''
+        """报警产品sku列表"""
         allure.dynamic.title(get_load_data[i][0])
         url = get_url + URLConf.PREFIX_ORDER.value + get_load_data[i][1]
         logger.info('请求地址为：' + url)
@@ -635,12 +673,13 @@ class TestOrderProfess(object):
         assert response.json().get('code') == 20000
         assert response.json().get('data') is not None
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_028_order_Repurchase_RemindPopWindow(self, get_load_data, get_url, i=25):
-        '''复购回流首页弹窗'''
+        """复购回流首页弹窗"""
         allure.dynamic.title(get_load_data[i][0])
         url = get_url + URLConf.PREFIX_ORDER.value + get_load_data[i][1]
         logger.info('请求地址为：' + url)
@@ -654,12 +693,13 @@ class TestOrderProfess(object):
         assert response.status_code == 200, '请求返回非200'  # 断言请求是否成功
         assert response.json().get('code') == 20000
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_029_product_getManualRenewalSkuInfo(self, get_load_data, get_url, i=26):
-        '''获取手动续订sku'''
+        """获取手动续订sku"""
         allure.dynamic.title(get_load_data[i][0])
         url = get_url + URLConf.PREFIX_ORDER.value + get_load_data[i][1]
         logger.info('请求地址为：' + url)
@@ -674,12 +714,13 @@ class TestOrderProfess(object):
         assert response.json().get('code') == 20000
         assert response.json().get('data') is not None
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_030_cloudorder_getbanner(self, get_load_data, get_url, i=27):
-        '''云服务购买页4.0更多操作下拉弹窗'''
+        """云服务购买页4.0更多操作下拉弹窗"""
         allure.dynamic.title(get_load_data[i][0])
         url = get_url + URLConf.PREFIX_ORDER.value + get_load_data[i][1]
         logger.info('请求地址为：' + url)
@@ -694,12 +735,13 @@ class TestOrderProfess(object):
         assert response.json().get('code') == 20000
         assert response.json().get('data') is not None
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_031_SD_bannerisshow(self, get_load_data, get_url, i=28):
-        '''查询SD卡格式化失败与损坏ABTEST解决方案按钮是否展示'''
+        """查询SD卡格式化失败与损坏ABTEST解决方案按钮是否展示"""
         allure.dynamic.title(get_load_data[i][0])
         url = get_url + URLConf.PREFIX_ORDER.value + get_load_data[i][1]
         logger.info('请求地址为：' + url)
@@ -714,12 +756,13 @@ class TestOrderProfess(object):
         assert response.json().get('code') == 20000
         assert response.json().get('data') is not None
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_032_SD_jumptosevenday(self, get_load_data, get_url, i=29):
-        '''查询SD卡格式化失败与损坏ABTEST是否跳转7天免费页'''
+        """查询SD卡格式化失败与损坏ABTEST是否跳转7天免费页"""
         allure.dynamic.title(get_load_data[i][0])
         url = get_url + URLConf.PREFIX_ORDER.value + get_load_data[i][1]
         logger.info('请求地址为：' + url)
@@ -734,12 +777,13 @@ class TestOrderProfess(object):
         assert response.json().get('code') == 20000
         assert response.json().get('data') is not None
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_033_isDeviceHasPayOrder(self, get_load_data, get_url, i=30):
-        '''查询SD卡格式化失败与损坏ABTEST是否跳转7天免费页'''
+        """查询SD卡格式化失败与损坏ABTEST是否跳转7天免费页"""
         allure.dynamic.title(get_load_data[i][0])
         url = get_url + URLConf.PREFIX_ORDER.value + get_load_data[i][1]
         logger.info('请求地址为：' + url)
@@ -754,12 +798,13 @@ class TestOrderProfess(object):
         assert response.json().get('code') == 20000
         assert response.json().get('data') is not None
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_034_openSmartAlarmFunction(self, get_load_data, get_url, i=31):
-        '''查询用户是否开放智能报警功能'''
+        """查询用户是否开放智能报警功能"""
         allure.dynamic.title(get_load_data[i][0])
         url = get_url + URLConf.PREFIX_ORDER.value + get_load_data[i][1]
         logger.info('请求地址为：' + url)
@@ -774,12 +819,13 @@ class TestOrderProfess(object):
         assert response.json().get('code') == 20000
         assert response.json().get('data') is not None
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_035_getProductListV4Banner(self, get_load_data, get_url, i=32):
-        '''获取云回放页4.0配置banner的图片和Url'''
+        """获取云回放页4.0配置banner的图片和Url"""
         allure.dynamic.title(get_load_data[i][0])
         url = get_url + URLConf.PREFIX_ORDER.value + get_load_data[i][1]
         logger.info('请求地址为：' + url)
@@ -794,12 +840,13 @@ class TestOrderProfess(object):
         assert response.json().get('code') == 20000
         assert response.json().get('data') is not None
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_035_getCloudPageOptimizationConfig(self, get_load_data, get_url, i=33):
-        '''云回放页面优化人群配置'''
+        """云回放页面优化人群配置"""
         allure.dynamic.title(get_load_data[i][0])
         url = get_url + URLConf.PREFIX_ORDER.value + get_load_data[i][1]
         logger.info('请求地址为：' + url)
@@ -814,13 +861,14 @@ class TestOrderProfess(object):
         assert response.json().get('code') == 20000
         assert response.json().get('data') is not None
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=2)
     @pytest.mark.cn
     @pytest.mark.hw
     # @pytest.mark.skip('暂时跳过')
     @pytest.mark.parametrize("get_load_data, get_url", [((path, current_file), '')],
-                             indirect=["get_load_data", "get_url"])
+                             indirect=True)
     def test_035_getCloudPageOptimizationConfig(self, get_load_data, get_url, i=34):
-        '''订单挽留页用户领取优惠券'''
+        """订单挽留页用户领取优惠券"""
         allure.dynamic.title(get_load_data[i][0])
         url = get_url + URLConf.PREFIX_ORDER.value + get_load_data[i][1]
         logger.info('请求地址为：' + url)
