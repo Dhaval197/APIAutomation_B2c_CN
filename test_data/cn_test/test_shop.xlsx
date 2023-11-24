@@ -1,0 +1,2 @@
+项目名称	测试用例名称	网关名称	接口地址	请求头部	请求方式	请求数据格式	请求参数
+Yihome_Api	用户登录-国内测试		v4/users/login		get	params	"{'mobile': 17717061741, 'password': 'Test@1846'}"
